@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>To-Do App</title>
+  <style>
+    :root {
+      --bg-light: #ffffff;
+      --text-light: #000000;
+      --card-bg: #f8f9fa;
+      --card-border: #007bff;
+      --btn-add: #dc3545;
+      --btn-edit: #28a745;
+      --btn-delete: #ffc107;
+      --btn-complete: #6c757d;
+    }
+
+    body { 
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+      max-width: 900px; 
+      margin: 0 auto; 
+      padding: 20px; 
+      background: var(--bg-light); 
+      min-height: 100vh; 
+      overflow-y: auto; 
+      color: var(--text-light);
+      transition: all 0.3s;
+      position: relative;
+    }
+
+    @keyframes float {
+      0% { transform: translateY(0); }
+      50% { transform: translateY(-20px); }
+      100% { transform: translateY(0); }
+    }
+
+    .bubble {
+      position: absolute;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.5);
+      animation: float 6s infinite;
+    }
+
+    .bubble:nth-child(1) { width: 20px; height: 20px; left: 10%; top: 20%; animation-duration: 5s; }
+    .bubble:nth-child(2) { width: 30px; height: 30px; left: 30%; top: 50%; animation-duration: 7s; }
+    .bubble:nth-child(3) { width: 15px; height: 15px; left: 70%; top: 30%; animation-duration: 4s; }
+
+    .container { 
+      background-color: var(--card-bg); 
+      padding: 25px; 
+      border-radius: 15px; 
+      box-shadow: 0 0 15px rgba(0,0,0,0.1); 
+      border: 2px solid var(--card-border); 
+      position: relative; 
+      z-index: 1;
+      max-height: 85vh; 
+      overflow-y: auto; 
+    }
+
+    .section { margin-bottom: 25px; }
+
+    h2 { 
+      color: var(--text-light); 
+      border-bottom: 3px solid var(--btn-add); 
+      padding-bottom: 8px; 
+      margin-bottom: 15px; 
+      font-size: 1.5em; 
+    }
+
+    .input-group { 
+      display: flex; 
+      flex-wrap: wrap; 
+      gap: 10px; 
+      margin-bottom: 15px; 
+      align-items: flex-start; 
+    }
+
+    .sort-group { display: flex; gap: 10px; margin-bottom: 10px; }
+
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+
+    th, td { 
+      padding: 12px; 
+      text-align: left; 
+      border: 2px solid var(--card-border); 
+      color: var(--text-light); 
+    }
+
+    th { 
+      background-color: #28a745; 
+      color: white; 
+      border-color: #218838; 
+    }
+
+    td { 
+      background-color: var(--card-bg); 
+      border-color: #dee2e6; 
+    }
+
+    tr:hover td { background-color: #e9ecef; }
+
+    input[type="text"], input[type="date"], input[type="time"], textarea, select { 
+      padding: 10px; 
+      border: 2px solid var(--card-border); 
+      border-radius: 5px; 
+      margin-right: 10px; 
+      box-sizing: border-box; 
+      background-color: var(--card-bg); 
+      color: var(--text-light); 
+      outline: none;
+    }
+
+    textarea { height: 50px; resize: vertical; min-width: 200px; }
+
+    button { 
+      padding: 10px 20px; 
+      margin-left: 10px; 
+      border: none; 
+      border-radius: 5px; 
+      cursor: pointer; 
+      transition: all 0.3s; 
+      color: white;
+    }
+
+    button:hover { opacity: 0.9; transform: scale(1.05); }
+
+    .add-btn { background-color: var(--btn-add); border: 2px solid var(--btn-add); }
+    .edit-btn { background-color: var(--btn-edit); border: 2px solid var(--btn-edit); }
+    .delete-btn { background-color: var(--btn-delete); border: 2px solid var(--btn-delete); }
+    .complete-btn { background-color: var(--btn-complete); border: 2px solid var(--btn-complete); }
+
+    .completed td { text-decoration: line-through; color: #6c757d; background-color: #e9ecef; }
+
+    .timestamp { font-size: 0.8em; color: #6c757d; }
+
+    .priority-high { border-left: 5px solid var(--btn-add); }
+    .priority-medium { border-left: 5px solid var(--btn-delete); }
+    .priority-low { border-left: 5px solid var(--btn-edit); }
+
+    .due-date { color: #e67e22; font-weight: bold; }
+
+    .alert { background-color: var(--btn-add); color: white; padding: 5px; border-radius: 3px; position: absolute; top: 5px; right: 5px; display: none; }
+
+    .overdue .alert { display: block; }
+
+    #searchInput { 
+      width: 100%; 
+      padding: 10px; 
+      margin-bottom: 10px; 
+      border: 2px solid var(--card-border); 
+      border-radius: 5px; 
+      background-color: var(--card-bg); 
+      color: var(--text-light); 
+    }
+
+    .progress-bar { 
+      width: 100%; 
+      background-color: #dee2e6; 
+      border-radius: 5px; 
+      margin-top: 10px; 
+    }
+
+    .progress { 
+      height: 20px; 
+      background-color: #28a745; 
+      border-radius: 5px; 
+      text-align: center; 
+      color: white; 
+      line-height: 20px; 
+    }
+
+    .tags { color: #17a2b8; font-style: italic; }
+  </style>
+</head>
+<body>
+  <div class="bubble"></div>
+  <div class="bubble"></div>
+  <div class="bubble"></div>
+  <div class="container">
+    <div class="section">
+      <h2>Add Task</h2>
+      <div class="input-group">
+        <input type="text" id="taskInput" placeholder="Enter task title..." required>
+        <textarea id="descriptionInput" placeholder="Enter task description..."></textarea>
+        <select id="categorySelect" required>
+          <option value="work">Work</option>
+          <option value="personal">Personal</option>
+          <option value="shopping">Shopping</option>
+        </select>
+        <select id="prioritySelect" required>
+          <option value="low">Low</option>
+          <option value="medium">Medium</option>
+          <option value="high">High</option>
+        </select>
+        <input type="date" id="dueDateInput" required>
+        <input type="time" id="dueTimeInput">
+        <input type="text" id="tagsInput" placeholder="Tags (e.g., #urgent)">
+        <select id="recurrenceSelect">
+          <option value="none">No Recurrence</option>
+          <option value="daily">Daily</option>
+          <option value="weekly">Weekly</option>
+          <option value="monthly">Monthly</option>
+        </select>
+        <select id="statusSelect" onchange="updateStatus()" required>
+          <option value="pending">Pending</option>
+          <option value="completed">Completed</option>
+        </select>
+        <button class="add-btn" onclick="addTask()">Add</button>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>Search Tasks</h2>
+      <input type="text" id="searchInput" placeholder="Search tasks..." oninput="searchTasks()">
+    </div>
+
+    <div class="section">
+      <h2>Sort Tasks</h2>
+      <div class="sort-group">
+        <select id="sortSelect" onchange="sortTasks()">
+          <option value="default">Default</option>
+          <option value="priority">By Priority</option>
+          <option value="dueDate">By Due Date</option>
+          <option value="category">By Category</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>Progress</h2>
+      <div class="progress-bar">
+        <div id="progress" class="progress">0%</div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>Pending Tasks</h2>
+      <table id="pendingTasks"></table>
+    </div>
+
+    <div class="section">
+      <h2>Completed Tasks</h2>
+      <table id="completedTasks"></table>
+    </div>
+  </div>
+
+  <!-- JavaScript remains same except theme-related parts removed -->
+  <script>
+    let pendingTasks = JSON.parse(localStorage.getItem('pendingTasks')) || [];
+    let completedTasks = JSON.parse(localStorage.getItem('completedTasks')) || [];
+
+    function addTask() {
+      const taskInput = document.getElementById('taskInput');
+      const descriptionInput = document.getElementById('descriptionInput');
+      const taskText = taskInput.value.trim();
+      const description = descriptionInput.value.trim();
+      const category = document.getElementById('categorySelect').value;
+      const priority = document.getElementById('prioritySelect').value;
+      const dueDate = document.getElementById('dueDateInput').value;
+      const dueTime = document.getElementById('dueTimeInput').value;
+      const tagsInput = document.getElementById('tagsInput').value.trim();
+      const recurrence = document.getElementById('recurrenceSelect').value;
+      const status = document.getElementById('statusSelect').value;
+      if (taskText && dueDate && category && priority && status) {
+        const timestamp = new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
+        const task = { text: taskText, description: description, timestamp: timestamp, category, priority, dueDate, dueTime, tags: tagsInput, recurrence };
+        if (status === 'pending') {
+          pendingTasks.push(task);
+        } else {
+          completedTasks.push(task);
+        }
+        saveTasks();
+        taskInput.value = '';
+        descriptionInput.value = '';
+        document.getElementById('dueDateInput').value = '';
+        document.getElementById('dueTimeInput').value = '';
+        document.getElementById('tagsInput').value = '';
+        document.getElementById('recurrenceSelect').value = 'none';
+        renderTasks();
+        checkDueDates();
+        showReminder(task);
+        updateProgress();
+      }
+    }
+
+    function toggleTask(index) {
+      const task = pendingTasks.splice(index, 1)[0];
+      task.timestamp = new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
+      completedTasks.push(task);
+      saveTasks();
+      renderTasks();
+      updateProgress();
+    }
+
+    function editTask(list, index) {
+      const newText = prompt('Edit task title:', list === 'pending' ? pendingTasks[index].text : completedTasks[index].text);
+      const newDesc = prompt('Edit description:', list === 'pending' ? pendingTasks[index].description : completedTasks[index].description);
+      if (newText && newText.trim()) {
+        if (list === 'pending') {
+          pendingTasks[index].text = newText.trim();
+          if (newDesc) pendingTasks[index].description = newDesc.trim();
+        } else {
+          completedTasks[index].text = newText.trim();
+          if (newDesc) completedTasks[index].description = newDesc.trim();
+        }
+        saveTasks();
+        renderTasks();
+      }
+    }
+
+    function deleteTask(list, index) {
+      if (list === 'pending') {
+        pendingTasks.splice(index, 1);
+      } else {
+        completedTasks.splice(index, 1);
+      }
+      saveTasks();
+      renderTasks();
+      updateProgress();
+    }
+
+    function checkDueDates() {
+      const now = new Date();
+      pendingTasks.forEach(task => {
+        if (task.dueDate && task.dueTime) {
+          const [hours, minutes] = task.dueTime.split(':');
+          const due = new Date(task.dueDate);
+          due.setHours(hours, minutes);
+          if (due < now) {
+            task.overdue = true;
+          } else {
+            task.overdue = false;
+          }
+          if (task.recurrence !== 'none' && due < now) {
+            const newDue = new Date(due);
+            if (task.recurrence === 'daily') newDue.setDate(due.getDate() + 1);
+            else if (task.recurrence === 'weekly') newDue.setDate(due.getDate() + 7);
+            else if (task.recurrence === 'monthly') newDue.setMonth(due.getMonth() + 1);
+            task.dueDate = newDue.toISOString().split('T')[0];
+            task.dueTime = task.dueTime;
+            task.overdue = false;
+          }
+        }
+      });
+      saveTasks();
+      renderTasks();
+    }
+
+    function searchTasks() {
+      const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+      const filteredPending = pendingTasks.filter(task => task.text.toLowerCase().includes(searchTerm) || (task.description && task.description.toLowerCase().includes(searchTerm)) || (task.tags && task.tags.toLowerCase().includes(searchTerm)));
+      const filteredCompleted = completedTasks.filter(task => task.text.toLowerCase().includes(searchTerm) || (task.description && task.description.toLowerCase().includes(searchTerm)) || (task.tags && task.tags.toLowerCase().includes(searchTerm)));
+      renderFilteredTasks(filteredPending, filteredCompleted);
+    }
+
+    function sortTasks() {
+      const sortBy = document.getElementById('sortSelect').value;
+      if (sortBy === 'priority') {
+        pendingTasks.sort((a, b) => {
+          const priorityOrder = { high: 0, medium: 1, low: 2 };
+          return priorityOrder[a.priority] - priorityOrder[b.priority];
+        });
+      } else if (sortBy === 'dueDate') {
+        pendingTasks.sort((a, b) => {
+          const dateA = a.dueDate ? new Date(a.dueDate) : new Date(0);
+          const dateB = b.dueDate ? new Date(b.dueDate) : new Date(0);
+          return dateA - dateB;
+        });
+      } else if (sortBy === 'category') {
+        pendingTasks.sort((a, b) => a.category.localeCompare(b.category));
+      }
+      renderTasks();
+    }
+
+    function renderFilteredTasks(pending, completed) {
+      document.getElementById('pendingTasks').innerHTML = `
+        <tr>
+          <th>Complete</th>
+          <th>Title</th>
+          <th>Description</th>
+          <th>Category</th>
+          <th>Priority</th>
+          <th>Due Date & Time</th>
+          <th>Timestamp</th>
+          <th>Tags</th>
+          <th>Recurrence</th>
+          <th>Actions</th>
+        </tr>
+        ${pending.map((task, index) => `
+          <tr class="priority-${task.priority} ${task.overdue ? 'overdue' : ''}">
+            <td><input type="checkbox" onchange="toggleTask(${pendingTasks.indexOf(task)})" ${task.overdue ? 'disabled' : ''}></td>
+            <td>${task.text}</td>
+            <td>${task.description || '-'}</td>
+            <td>${task.category}</td>
+            <td>${task.priority}</td>
+            <td>${task.dueDate ? `${task.dueDate} ${task.dueTime || ''}` : '-'}</td>
+            <td class="timestamp">(${task.timestamp})</td>
+            <td class="tags">${task.tags || '-'}</td>
+            <td>${task.recurrence}</td>
+            <td>
+              <button class="edit-btn" onclick="editTask('pending', ${pendingTasks.indexOf(task)})">Edit</button>
+              <button class="delete-btn" onclick="deleteTask('pending', ${pendingTasks.indexOf(task)})">Delete</button>
+            </td>
+          </tr>
+        `).join('')}
+      `;
+      document.getElementById('completedTasks').innerHTML = `
+        <tr>
+          <th>Title</th>
+          <th>Description</th>
+          <th>Category</th>
+          <th>Priority</th>
+          <th>Due Date & Time</th>
+          <th>Timestamp</th>
+          <th>Tags</th>
+          <th>Recurrence</th>
+          <th>Actions</th>
+        </tr>
+        ${completed.map((task, index) => `
+          <tr class="completed priority-${task.priority}">
+            <td>${task.text}</td>
+            <td>${task.description || '-'}</td>
+            <td>${task.category}</td>
+            <td>${task.priority}</td>
+            <td>${task.dueDate ? `${task.dueDate} ${task.dueTime || ''}` : '-'}</td>
+            <td class="timestamp">(${task.timestamp})</td>
+            <td class="tags">${task.tags || '-'}</td>
+            <td>${task.recurrence}</td>
+            <td>
+              <button class="edit-btn" onclick="editTask('completed', ${completedTasks.indexOf(task)})">Edit</button>
+              <button class="delete-btn" onclick="deleteTask('completed', ${completedTasks.indexOf(task)})">Delete</button>
+            </td>
+          </tr>
+        `).join('')}
+      `;
+    }
+
+    function saveTasks() {
+      localStorage.setItem('pendingTasks', JSON.stringify(pendingTasks));
+      localStorage.setItem('completedTasks', JSON.stringify(completedTasks));
+    }
+
+    function updateProgress() {
+      const totalTasks = pendingTasks.length + completedTasks.length;
+      const completed = completedTasks.length;
+      const percent = totalTasks === 0 ? 0 : Math.round((completed / totalTasks) * 100);
+      const progress = document.getElementById('progress');
+      progress.style.width = percent + '%';
+      progress.textContent = percent + '%';
+    }
+
+    function renderTasks() {
+      renderFilteredTasks(pendingTasks, completedTasks);
+    }
+
+    renderTasks();
+    updateProgress();
+    checkDueDates();
+
+    function showReminder(task) {
+      if (task.overdue) {
+        alert(`Task "${task.text}" is overdue!`);
+      }
+    }
+  </script>
+</body>
+</html>
